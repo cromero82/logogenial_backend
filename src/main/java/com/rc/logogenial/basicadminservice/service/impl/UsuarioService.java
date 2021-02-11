@@ -162,31 +162,6 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
         usuario.setIntentosExitosos(0L);
         usuario.setIntentosFallidos(0L);
 
-//        Role rolEstudiante = new Role();
-//        rolEstudiante.setId(3L);
-//        rolEstudiante.setNombre("Estudiante");
-
-        // usuarios de la app Mobile no traen roles por ende son estudiantes
-//        if(usuario.getRoles().size() ==0) {
-//            usuario.getRoles().add( rolEstudiante);
-//        }
-//
-//        // Configura el rol que solicitó
-//        switch(usuario.getRoles().get(0).getNombre()){
-//            case "Docente / Tutor":
-//                usuario.getRoles().get(0).setId(2L);
-//                usuario.getRoles().add( rolEstudiante);
-//                break;
-//            case "Administrador":
-//                usuario.getRoles().get(0).setId(1L);
-//                usuario.getRoles().add( rolEstudiante);
-//                break;
-//            case "Estudiante":
-//                usuario.getRoles().get(0).setId(3L);
-//                usuario.setEstado(1);
-//                break;
-//        }
-
         if(usuario.getRoles().size() > 0) {
             if(usuario.getRoles().get(0).getId() == 0){
                 Role rolRegistrado = roleService.findByNombre(usuario.getRoles().get(0).getNombre());
@@ -196,19 +171,7 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
                 usuario.setEstado(0);
             }
         }
-
-//        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ROL");
-//        Query q = em.createNativeQuery("SELECT a.id, a.version, a.firstname, a.lastname FROM Author a", Author.class);
-//        List<Author> authors = q.getResultList();
         Usuario nuevoUsuario = repository.save(usuario);
-//        if(usuario.getRoles().size() == 1){
-//            // para usuarios estudiantes
-//            GrupoEstudiante grupoEstudiante = new GrupoEstudiante();
-//            Grupo grupoInvitado = grupoService.findById(5);
-//            grupoEstudiante.setGrupo(grupoInvitado);
-//            grupoEstudiante.setUsuarioestudiante(nuevoUsuario);
-//            grupoEstudianteService.create(grupoEstudiante);
-//        }
         return  nuevoUsuario;
     }
 
