@@ -1,9 +1,6 @@
 package com.rc.logogenial.basicadminservice.service.impl;
 
-import com.rc.logogenial.basicadminservice.entity.Grupo;
-import com.rc.logogenial.basicadminservice.entity.GrupoEstudiante;
-import com.rc.logogenial.basicadminservice.entity.Role;
-import com.rc.logogenial.basicadminservice.entity.Usuario;
+import com.rc.logogenial.basicadminservice.entity.*;
 import com.rc.logogenial.basicadminservice.exception.ResourceFoundException;
 import com.rc.logogenial.basicadminservice.exception.ResourceNotFoundException;
 
@@ -35,6 +32,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+
 @Service
 @Transactional
 public class UsuarioService extends  BaseService<Usuario> implements IUsuarioService<Usuario, UsuarioDto>,  UserDetailsService {
@@ -48,6 +50,9 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
     @Autowired
     private GrupoService grupoService;
 
+    @Autowired
+    private RoleService roleService;
+
     private Logger logger = LoggerFactory.getLogger(UsuarioService.class);
 
     @Autowired
@@ -59,10 +64,6 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         return repository.findByUsername(userDetails.getUsername());
     }
-
-
-
-
 
     @Override
     public UsuarioDto createSecure(UsuarioDto usuarioDto) throws ResourceFoundException, ResourceNotFoundException {
@@ -161,9 +162,6 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
         usuario.setIntentosExitosos(0L);
         usuario.setIntentosFallidos(0L);
 
-        // Por defecto el usuario esta inactivo
-        usuario.setEstado(0);
-
 //        Role rolEstudiante = new Role();
 //        rolEstudiante.setId(3L);
 //        rolEstudiante.setNombre("Estudiante");
@@ -188,6 +186,20 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
 //                usuario.setEstado(1);
 //                break;
 //        }
+
+        if(usuario.getRoles().size() > 0) {
+            if(usuario.getRoles().get(0).getId() == 0){
+                Role rolRegistrado = roleService.findByNombre(usuario.getRoles().get(0).getNombre());
+                if(rolRegistrado != null){
+                    usuario.getRoles().set(0, rolRegistrado);
+                }
+                usuario.setEstado(0);
+            }
+        }
+
+//        EntityManagerFactory emf = Persistence.createEntityManagerFactory("ROL");
+//        Query q = em.createNativeQuery("SELECT a.id, a.version, a.firstname, a.lastname FROM Author a", Author.class);
+//        List<Author> authors = q.getResultList();
         Usuario nuevoUsuario = repository.save(usuario);
 //        if(usuario.getRoles().size() == 1){
 //            // para usuarios estudiantes

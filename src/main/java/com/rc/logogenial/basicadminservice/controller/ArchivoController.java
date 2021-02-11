@@ -5,17 +5,16 @@ import com.rc.logogenial.basicadminservice.exception.ResourceNotFoundException;
 import com.rc.logogenial.basicadminservice.service.IArchivoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 
 @RestController
 @RequestMapping({ "v1/archivo-api" })
@@ -45,8 +44,7 @@ public class ArchivoController  {
 
     @GetMapping("/getById/{id}")
     public ResponseEntity<Resource> verFoto(@PathVariable("id") int id) throws IOException {
-        Resource recurso = null;
-        recurso = service.cargar(id);
+        Resource recurso =  service.cargar(id);
 
         // para que se pueda descargar
         HttpHeaders cabecera = new HttpHeaders();
