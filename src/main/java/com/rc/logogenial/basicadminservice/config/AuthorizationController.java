@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthorizationController {
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     /** The ldap properties. */
 //    @Value("${spring.ldap.properties}")
 //    private String ldapProperties;
@@ -79,6 +82,7 @@ public class AuthorizationController {
             if (user != null) {
                 try {
                     if (user.getEstado()== 1 || user.getEstado() == 0) {
+                        String clave = passwordEncoder.encode(loginRequest.getPassword());
                         authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                                 loginRequest.getUsername(), loginRequest.getPassword()));
 
