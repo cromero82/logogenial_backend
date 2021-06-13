@@ -1,0 +1,6 @@
+/*** SCRIPS DOCKERS AMBIENTE ***/
+sudo docker network create logogenial-network
+sudo docker run -p 5433:5432 --name postgres13-logogenial --network logogenial-network -e POSTGRES_USER=romerito-admin -e POSTGRES_PASSWORD=f4ast3rv3rs10n* -e POSTGRES_DB=logogenial_bd -d postgres:13-alpine
+
+
+
