@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 
 @EnableJpaRepositories
 @SpringBootApplication
-//@EnableWebSecurity
 @CrossOrigin(origins = "*")
 public class BasicAdminServiceApplication {
 
