@@ -28,7 +28,7 @@ public class GrupoService extends BaseService<Grupo> implements IGrupoService {
 
     @Override
     public Grupo create(Grupo grupo) {
-        grupo.setUsuario(usuarioService.getUserLogged());
+        grupo.setUsuario(usuarioService.getUserEntityLogged());
         return repository.save(grupo);
     }
 
@@ -74,7 +74,7 @@ public class GrupoService extends BaseService<Grupo> implements IGrupoService {
     public Grupo update(Grupo grupo) throws ResourceNotFoundException {
         if (repository.findById(grupo.getId()).isPresent())
         {
-            grupo.setUsuario(usuarioService.getUserLogged());
+            grupo.setUsuario(usuarioService.getUserEntityLogged());
             return repository.save(grupo);
         }
         throw new ResourceNotFoundException("Grupo", "id", Integer.toString(grupo.getId()));
@@ -88,7 +88,7 @@ public class GrupoService extends BaseService<Grupo> implements IGrupoService {
     @Override
     public ResultSearchData<Grupo> findAllSearch(int page, int size, String sortBy, String sortOrder) {
         Pageable paging = PageRequest.of(page, size, sortOrder.equals("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending());
-        Usuario usuario = usuarioService.getUserLogged();
+        Usuario usuario = usuarioService.getUserEntityLogged();
         Page<Grupo> pagedResult = repository.findAllByUsuario_Id(paging, usuario.getId());
         return (ResultSearchData<Grupo>) this.getResultSearch(pagedResult);
     }
@@ -97,4 +97,10 @@ public class GrupoService extends BaseService<Grupo> implements IGrupoService {
     public List<Grupo> findAllByUsuarioId(int usuarioId) {
         return repository.findAllByUsuario_Id(usuarioId);
     }
+
+    @Override
+    public Grupo findByNombre(String nombre) {
+        return repository.findByNombre(nombre);
+    }
+
 }

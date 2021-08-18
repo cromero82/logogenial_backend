@@ -87,7 +87,7 @@ public class GrupoNivelTemaService extends BaseService<GrupoNivelTema> implement
 
         Pageable paging = PageRequest.of(pag.getPage(), pag.getSize(),
                 pag.getSortBy().equals("asc") ? Sort.by(pag.getSortOrder()).ascending() : Sort.by(pag.getSortBy()).descending());
-        Usuario usuario = usuarioService.getUserLogged();
+        Usuario usuario = usuarioService.getUserEntityLogged();
         Page<GrupoNivelTema> pagedResult = repository.findAllByGrupoNivel_Id(paging, grupoNivelId);
         return (ResultSearchData<GrupoNivelTema>) this.getResultSearch(pagedResult);
     }

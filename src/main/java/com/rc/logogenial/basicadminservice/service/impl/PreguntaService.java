@@ -22,7 +22,7 @@ public class PreguntaService extends BaseService<Pregunta> implements IPreguntaS
 
     @Override
     public Pregunta create(Pregunta pregunta) {
-        Usuario usuario = usuarioService.getUserLogged();
+        Usuario usuario = usuarioService.getUserEntityLogged();
         pregunta.setUsuarioautor(usuario);
         return repository.save(pregunta);
     }

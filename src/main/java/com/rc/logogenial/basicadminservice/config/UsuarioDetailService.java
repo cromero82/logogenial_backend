@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.rc.logogenial.basicadminservice.config.models.UserPrincipal;
+import com.rc.logogenial.basicadminservice.domain.dto.UsuarioDto;
 import com.rc.logogenial.basicadminservice.entity.Usuario;
 import com.rc.logogenial.basicadminservice.exception.ResourceNotFoundException;
 import com.rc.logogenial.basicadminservice.service.impl.UsuarioService;
@@ -37,7 +38,7 @@ public class UsuarioDetailService implements UserDetailsService {
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        Usuario user = usuarioService.findByUsername(username);
+        UsuarioDto user = usuarioService.findByUsername(username);
 
         if (user == null ) {
             throw new ResourceNotFoundException("User Not Found with -> username or email : " + username);

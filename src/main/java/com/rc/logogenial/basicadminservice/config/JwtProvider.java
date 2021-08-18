@@ -44,7 +44,7 @@ public class JwtProvider {
      */
     public String generateJwtToken(Authentication authentication) {
 
-        Usuario user = userRepository.findByUsername(authentication.getName());
+        Usuario user = userRepository.findEntityByUsername(authentication.getName());
 
         if (user == null) {
             throw new UsernameNotFoundException("User Not Found with -> username or email : " + authentication.getName());

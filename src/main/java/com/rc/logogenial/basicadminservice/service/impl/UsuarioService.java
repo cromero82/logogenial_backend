@@ -1,5 +1,6 @@
 package com.rc.logogenial.basicadminservice.service.impl;
 
+import com.rc.logogenial.basicadminservice.domain.dto.UsuarioDto;
 import com.rc.logogenial.basicadminservice.entity.Grupo;
 import com.rc.logogenial.basicadminservice.entity.GrupoEstudiante;
 import com.rc.logogenial.basicadminservice.entity.Role;
@@ -30,12 +31,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UsuarioService extends  BaseService<Usuario> implements IUsuarioService<Usuario>,  UserDetailsService {
+public class UsuarioService extends  BaseService<Usuario> implements IUsuarioService<UsuarioDto>,  UserDetailsService {
 
     @Autowired
     private UsuarioRepository repository;
@@ -52,16 +55,24 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public Usuario getUserLogged() {
+    public UsuarioDto getUserLogged() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return repository.findByUsername(userDetails.getUsername());
+        Usuario ent = repository.findByUsername(userDetails.getUsername()).get();
+        return  new UsuarioDto(ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles());
+    }
+
+    public Usuario getUserEntityLogged() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Usuario ent = repository.findByUsername(userDetails.getUsername()).get();
+        return  ent;
     }
 
     @Override
     @Transactional(readOnly=true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario usuario = repository.findByUsername(username);
+        Usuario usuario = repository.findByUsername(username).get();
 
         if(usuario == null) {
             logger.error("Error en el login: no existe el usuario '"+username+"' en el sistema!");
@@ -78,69 +89,90 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
     }
 
     @Transactional(readOnly=true)
-    public Usuario findByUsername(String username) {
-        return repository.findByUsername(username);
+    public UsuarioDto findByUsername(String username) {
+        Usuario ent = repository.findByUsername(username).get();
+        return  new UsuarioDto(ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles());
     }
 
-    public Usuario create(Usuario usuario) throws ResourceFoundException, ResourceNotFoundException {
-        Optional<Usuario> usuarioConsulta = repository.findByUsernameOrEmail(usuario.getUsername(), usuario.getEmail());
+    public Usuario findEntityByUsername(String username) {
+        Usuario ent = repository.findByUsername(username).get();
+        return  ent;
+    }
+
+    public UsuarioDto create(UsuarioDto usuarioDto) throws ResourceFoundException, ResourceNotFoundException {
+        Optional<Usuario> usuarioConsulta = repository.findByUsernameOrEmail(usuarioDto.getUsername(), usuarioDto.getEmail());
         if(usuarioConsulta.isPresent()) {
-            throw new ResourceFoundException("Usuario "+ usuario.getUsername() + " o email: " + usuario.getEmail());
+            throw new ResourceFoundException("Usuario "+ usuarioDto.getUsername() + " o email: " + usuarioDto.getEmail());
         }
-        String clave = passwordEncoder.encode(usuario.getPassword());
+        Usuario usuario = new Usuario();
+        String clave = passwordEncoder.encode(usuarioDto.getPassword());
+        usuario.setUsername( usuarioDto.getUsername());
+        usuario.setNombre(usuarioDto.getNombre());
+        usuario.setApellido( usuarioDto.getApellido());
+        usuario.setEmail( usuarioDto.getEmail());
         usuario.setPassword(clave);
-        usuario.setIntentosExitosos(0L);
-        usuario.setIntentosFallidos(0L);
+        usuario.setIntentosExitosos(0);
+        usuario.setIntentosFallidos(0);
 
         // Por defecto el usuario esta inactivo
         usuario.setEstado(0);
 
-        Role rolEstudiante = new Role();
-        rolEstudiante.setId(3L);
-        rolEstudiante.setNombre("Estudiante");
+
+        Role rol = new Role();
 
         // usuarios de la app Mobile no traen roles por ende son estudiantes
-        if(usuario.getRoles().size() ==0) {
-            usuario.getRoles().add( rolEstudiante);
+        if(usuarioDto.getRoles().size() ==0) {
+            rol.setId(3L);
+            rol.setNombre("ESTUDIANTE");
+            usuario.setEstado(1);
+        }else {
+            // Configura el rol que solicitó
+            switch(usuarioDto.getRoles().get(0).getNombre().toLowerCase(Locale.ROOT)){
+                case "docente / tutor":
+                    rol.setId(2L);
+                    rol.setNombre("TUTOR");
+                    break;
+                case "administrador":
+                    rol.setId(1L);
+                    rol.setNombre("ADMINISTRADOR");
+                    break;
+                case "estudiante":
+                    rol.setId(1L);
+                    rol.setNombre("ADMINISTRADOR");
+                    usuario.setEstado(1);
+                    break;
+            }
         }
+        List<Role> roles  = new ArrayList<>();
+        roles.add(rol);
+        usuario.setRoles(roles);
 
-        // Configura el rol que solicitó
-        switch(usuario.getRoles().get(0).getNombre()){
-            case "Docente / Tutor":
-                usuario.getRoles().get(0).setId(2L);
-                usuario.getRoles().add( rolEstudiante);
-                break;
-            case "Administrador":
-                usuario.getRoles().get(0).setId(1L);
-                usuario.getRoles().add( rolEstudiante);
-                break;
-            case "Estudiante":
-                usuario.getRoles().get(0).setId(3L);
-                usuario.setEstado(1);
-                break;
-        }
         Usuario nuevoUsuario = repository.save(usuario);
-        if(usuario.getRoles().size() == 1){
+        if(usuarioDto.getRoles().size() == 1){
             // para usuarios estudiantes
             GrupoEstudiante grupoEstudiante = new GrupoEstudiante();
-            Grupo grupoInvitado = grupoService.findById(5);
+            Grupo grupoInvitado = grupoService.findByNombre("Invitado");
             grupoEstudiante.setGrupo(grupoInvitado);
             grupoEstudiante.setUsuarioestudiante(nuevoUsuario);
             grupoEstudianteService.create(grupoEstudiante);
         }
-        return  nuevoUsuario;
+        usuarioDto.setId(usuario.getId());
+        return  usuarioDto;
     }
 
-    public void delete(Usuario Usuario) throws ResourceNotFoundException {
-        if (repository.findById(Usuario.getId()).isPresent())
+    public void delete(UsuarioDto usuarioDto) throws ResourceNotFoundException {
+        Optional<Usuario> usuario = repository.findById(usuarioDto.getId());
+        if (repository.findById(usuarioDto.getId()).isPresent())
         {
-            repository.delete(Usuario);
+            repository.delete(usuario.get());
+        }else{
+            throw new ResourceNotFoundException("User", "id",  Integer.toString(usuarioDto.getId()));
         }
-        throw new ResourceNotFoundException("User", "id",  Integer.toString(Usuario.getId()));
     }
 
     public void deleteById(int id) throws ResourceNotFoundException {
-        if (repository.findById(id).isPresent())
+        Optional<Usuario> usuario = repository.findById(id);
+        if (usuario.isPresent())
         {
             repository.deleteById(id);
         }
@@ -150,14 +182,22 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
         }
     }
 
-    public Iterable<Usuario> findAll() {
-        return repository.findAll();
+    public Iterable<UsuarioDto> findAll() {
+//        Iterable<Usuario> estudiantes = repository.findAll();
+//        List<UsuarioDto> estuddiantesDto = estudiantes.iterator().map(ent ->
+//                new UsuarioDto(ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles()))
+//                .collect(Collectors.toList());
+//        return  estuddiantesDto;
+//        return repository.findAll();
+        return null;
     }
 
-    public Usuario findById(int id) throws ResourceNotFoundException {
-        if (repository.findById(id).isPresent())
+    public UsuarioDto findById(int id) throws ResourceNotFoundException {
+        Optional<Usuario> usuario = repository.findById(id);
+        if (usuario.isPresent())
         {
-            return repository.findById(id).get();
+            Usuario ent = usuario.get();
+            return  new UsuarioDto(ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles());
         }
         else
         {
@@ -165,40 +205,62 @@ public class UsuarioService extends  BaseService<Usuario> implements IUsuarioSer
         }
     }
 
-    public Usuario update(Usuario usuario) throws ResourceNotFoundException {
-        Optional<Usuario> usuarioConsultado = repository.findById(usuario.getId());
+    @Override
+    public UsuarioDto update(UsuarioDto usuarioDto) throws ResourceNotFoundException {
+        Optional<Usuario> usuarioConsultado = repository.findByUsername(usuarioDto.getUsername());
         if (usuarioConsultado.isPresent())
         {
-            usuarioConsultado.get().setEmail(usuario.getEmail());
-            usuarioConsultado.get().setUsername(usuario.getUsername());
-            usuarioConsultado.get().setNombre(usuario.getNombre());
-            String clave = usuario.getPassword();
+            usuarioConsultado.get().setEmail(usuarioDto.getEmail());
+            usuarioConsultado.get().setUsername(usuarioDto.getUsername());
+            usuarioConsultado.get().setNombre(usuarioDto.getNombre());
+            String clave = usuarioDto.getPassword();
             if(clave.length() <= 10)  {
-                clave = passwordEncoder.encode(usuario.getPassword());
+                clave = passwordEncoder.encode(usuarioDto.getPassword());
             }
             usuarioConsultado.get().setPassword(clave);
-            if(usuario.getAvatar() == null && usuarioConsultado.get().getAvatar() == null) {
+            if(usuarioDto.getAvatar() == null && usuarioConsultado.get().getAvatar() == null) {
                 usuarioConsultado.get().setAvatar("av-1.png");
             }
-            return repository.save(usuarioConsultado.get());
+            repository.save(usuarioConsultado.get());
+            return  usuarioDto;
         }
-        throw new ResourceNotFoundException("User", "id", Integer.toString(usuario.getId()));
+        throw new ResourceNotFoundException("User", "id", Integer.toString(usuarioDto.getId()));
     }
 
     @Override
-    public ResultSearchData<Usuario> findAllSearch(int page, int size, String sortBy, String sortOrder) {
+    public ResultSearchData<UsuarioDto> findAllSearch(int page, int size, String sortBy, String sortOrder) {
         Pageable paging = PageRequest.of(page, size, Sort.by(sortBy));
         Page<Usuario> pagedResult = repository.findAll(paging);
-        return (ResultSearchData<Usuario>) this.getResultSearch(pagedResult);
+        ResultSearchData<Usuario> resultSearch = this.getResultSearch(pagedResult);
+        ResultSearchData<UsuarioDto> result = new ResultSearchData<>();
+        result.setSize( resultSearch.getSize());
+        result.setTotalElements( resultSearch.getTotalElements());
+        result.setTotalPages( resultSearch.getTotalPages());
+        result.setContent( resultSearch.getContent().stream().map( ent ->
+            new UsuarioDto( ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles() ) )
+                .collect(Collectors.toList()) );
+        return  result;
     }
 
     @Override
-    public List<Usuario> findAllStudends() {
-        return repository.findAllStudendts();
+    public List<UsuarioDto> findAllStudends() {
+        List<Usuario> estudiantes = repository.findAllStudendts();
+        List<UsuarioDto> estuddiantesDto = estudiantes.stream().map(ent ->
+                new UsuarioDto(ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles()))
+                .collect(Collectors.toList());
+        return  estuddiantesDto;
     }
 
     @Override
-    public List<Usuario> findAllTeachers() {
-        return repository.findAllTeachers();
+    public List<UsuarioDto> findAllTeachers() {
+        List<Usuario> profesores = repository.findAllTeachers();
+        List<UsuarioDto> profesoresDto = profesores.stream().map(ent ->
+                new UsuarioDto(ent.getId(), ent.getUsername(), ent.getNombre(), ent.getApellido(), ent.getEmail(), ent.getAvatar(), ent.getRoles()))
+                .collect(Collectors.toList());
+        return  profesoresDto;
+    }
+
+    public void updateIntentos(Usuario usuario) throws ResourceNotFoundException {
+        repository.save(usuario);
     }
 }

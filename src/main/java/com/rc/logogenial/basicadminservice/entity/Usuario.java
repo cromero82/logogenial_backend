@@ -39,11 +39,11 @@ public class Usuario implements Serializable {
 
     /** The Intentos fallidos. */
     @Column(name = "INTENTOS_FALLIDOS")
-    private Long intentosFallidos;
+    private int intentosFallidos;
 
     /** The Intentos exitosos. */
     @Column(name = "INTENTOS_EXITOSOS")
-    private Long intentosExitosos;
+    private int intentosExitosos;
 
     @Column(unique = true)
     private String email;

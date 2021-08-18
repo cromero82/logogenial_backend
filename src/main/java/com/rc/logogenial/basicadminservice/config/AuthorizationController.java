@@ -8,6 +8,7 @@ import javax.validation.Valid;
 
 import com.rc.logogenial.basicadminservice.config.models.JwtResponse;
 import com.rc.logogenial.basicadminservice.config.models.Login;
+import com.rc.logogenial.basicadminservice.domain.dto.UsuarioDto;
 import com.rc.logogenial.basicadminservice.entity.Usuario;
 import com.rc.logogenial.basicadminservice.exception.ErrorPersistException;
 import com.rc.logogenial.basicadminservice.exception.ResourceNotFoundException;
@@ -76,27 +77,28 @@ public class AuthorizationController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticate(@Valid @RequestBody Login loginRequest) throws UnauthorizedRequestException {
         Authentication authentication = null;
-        Long contador = 0L;
+        int contador = 0;
         if (loginRequest.getUsername() != null) {
-            Usuario user = usuarioService.findByUsername(loginRequest.getUsername());
+            Usuario user = usuarioService.findEntityByUsername(loginRequest.getUsername());
             if (user != null) {
                 try {
                     if (user.getEstado()== 1 || user.getEstado() == 0) {
                         String clave = passwordEncoder.encode(loginRequest.getPassword());
-                        authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                                loginRequest.getUsername(), loginRequest.getPassword()));
+                        UsernamePasswordAuthenticationToken authentication1 = new UsernamePasswordAuthenticationToken(
+                                loginRequest.getUsername(), loginRequest.getPassword());
+                        authentication = authenticationManager.authenticate(authentication1);
 
                         if (authentication.isAuthenticated()) {
-                            Long exitososPrevios = user.getIntentosExitosos() != null ? user.getIntentosExitosos()  : 0L;
+                            int exitososPrevios = user.getIntentosExitosos() ;
                             contador = exitososPrevios + 1;
                             user.setIntentosExitosos(contador);
                         } else {
-                            Long fallidosPrevios = user.getIntentosFallidos() != null ? user.getIntentosFallidos()  : 0L;
+                           int fallidosPrevios = user.getIntentosFallidos();
                             contador = fallidosPrevios + 1;
                             user.setIntentosFallidos(contador);
                             throw new UnauthorizedRequestException("Usuario o clave incorrectos.");
                         }
-                        usuarioService.update(user);
+                        usuarioService.updateIntentos(user);
                     } else {
                         throw new UnauthorizedRequestException("El usuario no esta activo en el sistema.");
                     }
@@ -106,7 +108,7 @@ public class AuthorizationController {
                     contador = user.getIntentosFallidos() + 1;
                     user.setIntentosFallidos(contador);
                     try {
-                        usuarioService.update(user);
+                        usuarioService.updateIntentos(user);
                     } catch ( ResourceNotFoundException resourceNotFoundException) {
                         throw new ErrorPersistException("Error actualizando datos fallidos de usuario");
                     }
