@@ -12,4 +12,6 @@ public interface IGrupoService extends IGenericService<Grupo> {
     public void delete(Grupo nivel) throws ResourceNotFoundException;
     Iterable<Grupo> findAllByEstudianteId(int id);
     List<Grupo> findAllByUsuarioId(int id);
+
+    Grupo findByNombre(String invitado);
 }

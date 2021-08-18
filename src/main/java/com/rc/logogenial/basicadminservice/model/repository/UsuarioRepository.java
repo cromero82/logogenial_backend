@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface UsuarioRepository extends CrudRepository<Usuario,Integer> {
     Page<Usuario> findAll(Pageable paging);
 
-    public Usuario findByUsername(String username);
+    Optional<Usuario> findByUsername(String username);
 
     Optional<Usuario> findByUsernameOrEmail(String username, String email);
 

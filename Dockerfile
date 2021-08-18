@@ -1,5 +1,5 @@
-FROM openjdk:8-jdk-alpine
+FROM openjdk:11
 VOLUME /tmp
 EXPOSE 8080
-ADD ./target/basic-admin-service-0.0.1.jar back-logogenia.jar
-ENTRYPOINT ["java","-jar","back-logogenia.jar"]
+ADD ./target/micro-logogenial-back-1.0.jar micro-logogenia-back.jar
+ENTRYPOINT ["java","-jar","micro-logogenia-back.jar"]
